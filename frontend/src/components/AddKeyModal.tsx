@@ -72,8 +72,10 @@ export default function AddKeyModal({ onClose, onSuccess }: AddKeyModalProps) {
               onChange={(e) => setFormData({ ...formData, provider: e.target.value })}
               required
             >
-              <option value="openai">OpenAI</option>
+              <option value="openai">OpenAI (GPT-4, GPT-3.5)</option>
               <option value="anthropic">Anthropic (Claude)</option>
+              <option value="gemini">Google (Gemini)</option>
+              <option value="perplexity">Perplexity</option>
             </select>
           </div>
 

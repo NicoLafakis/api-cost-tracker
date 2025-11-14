@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Background -->
+  <rect width="512" height="512" fill="#3b82f6" rx="80"/>
+
+  <!-- Dollar sign with circuit board style -->
+  <g fill="#ffffff">
+    <!-- Dollar sign -->
+    <path d="M256 80 L256 432 M200 140 Q200 100, 256 100 Q312 100, 312 140 Q312 180, 256 180 L256 180 Q200 180, 200 220 Q200 260, 256 260 Q312 260, 312 300 Q312 340, 256 340 Q200 340, 200 300"
+          stroke="white"
+          stroke-width="24"
+          fill="none"
+          stroke-linecap="round"/>
+
+    <!-- Circuit nodes -->
+    <circle cx="160" cy="200" r="12"/>
+    <circle cx="352" cy="200" r="12"/>
+    <circle cx="160" cy="312" r="12"/>
+    <circle cx="352" cy="312" r="12"/>
+
+    <!-- Circuit lines -->
+    <line x1="160" y1="200" x2="180" y2="200" stroke="white" stroke-width="4"/>
+    <line x1="332" y1="200" x2="352" y2="200" stroke="white" stroke-width="4"/>
+    <line x1="160" y1="312" x2="180" y2="312" stroke="white" stroke-width="4"/>
+    <line x1="332" y1="312" x2="352" y2="312" stroke="white" stroke-width="4"/>
+  </g>
+
+  <!-- API text -->
+  <text x="256" y="460" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="white" text-anchor="middle">API</text>
+</svg>

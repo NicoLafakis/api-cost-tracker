@@ -2,11 +2,12 @@ import cron from 'node-cron';
 import { query } from '../database/connection';
 import { decrypt } from '../utils/encryption';
 import { getClient } from './apiClients';
+import { emailService } from './emailService';
 
 interface ApiKeyRecord {
   id: number;
   encrypted_key: string;
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'gemini' | 'perplexity';
 }
 
 export class PollingService {
@@ -65,20 +66,32 @@ export class PollingService {
 
       const usageData = await client.fetchUsage(apiKey, startOfDay, endOfDay);
 
-      // Store snapshot
+      // Store snapshot with detailed token tracking
       await query(
-        `INSERT INTO usage_snapshots (api_key_id, snapshot_date, total_cost, token_usage, request_count, model_breakdown)
-        VALUES (?, CURDATE(), ?, ?, ?, ?)
+        `INSERT INTO usage_snapshots (
+          api_key_id, snapshot_date, total_cost, token_usage,
+          input_tokens, output_tokens, cached_tokens,
+          request_count, requests_with_search, model_breakdown
+        )
+        VALUES (?, CURDATE(), ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
           total_cost = VALUES(total_cost),
           token_usage = VALUES(token_usage),
+          input_tokens = VALUES(input_tokens),
+          output_tokens = VALUES(output_tokens),
+          cached_tokens = VALUES(cached_tokens),
           request_count = VALUES(request_count),
+          requests_with_search = VALUES(requests_with_search),
           model_breakdown = VALUES(model_breakdown)`,
         [
           keyRecord.id,
           usageData.totalCost,
           usageData.tokenUsage,
+          usageData.inputTokens,
+          usageData.outputTokens,
+          usageData.cachedTokens,
           usageData.requestCount,
+          usageData.requestsWithSearch || 0,
           JSON.stringify(usageData.modelBreakdown),
         ]
       );
@@ -151,8 +164,25 @@ export class PollingService {
               [alert.id]
             );
 
-            // In a real implementation, send email notification here
-            // sendEmailAlert(alert.alert_email, keyId, actualSpend, alert.threshold_amount);
+            // Send email notification if configured
+            if (alert.alert_email && emailService.isConfigured()) {
+              // Get key label for the email
+              const keyInfo = await query<any[]>(
+                `SELECT label FROM api_keys WHERE id = ?`,
+                [keyId]
+              );
+              const keyLabel = keyInfo[0]?.label || `Key #${keyId}`;
+
+              await emailService.sendSpendingAlert(
+                alert.alert_email,
+                keyLabel,
+                actualSpend,
+                alert.threshold_amount,
+                alert.threshold_type
+              );
+            } else if (alert.alert_email && !emailService.isConfigured()) {
+              console.warn('⚠️  Alert email configured but SMTP settings missing. Configure SMTP to enable email notifications.');
+            }
           }
         }
       }

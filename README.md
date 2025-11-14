@@ -1,20 +1,34 @@
 # API Cost Tracker
 
-A lightweight, progressive web application (PWA) for tracking AI API costs across OpenAI and Anthropic (Claude) services. Monitor usage, set spending alerts, and gain real-time visibility into your API expenses.
+A lightweight, progressive web application (PWA) for tracking AI API costs across **OpenAI, Anthropic (Claude), Google Gemini, and Perplexity** services. Monitor token usage, calculate costs locally, set spending alerts, and gain real-time visibility into your API expenses.
 
 ![API Cost Tracker](https://img.shields.io/badge/version-1.0.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## Features
 
-- **Multi-Key Management**: Securely store and track multiple API keys from OpenAI and Anthropic
+- **Multi-Provider Support**: Track usage across OpenAI (GPT-4, GPT-3.5), Anthropic (Claude), Google Gemini, and Perplexity
+- **Token-Based Cost Tracking**: Fetch token usage and calculate costs using built-in pricing database (updated for Nov 2025)
+- **Multi-Key Management**: Securely store and track multiple API keys with AES-256 encryption
 - **Real-Time Monitoring**: Automated polling jobs fetch usage data every 5-15 minutes
-- **Unified Dashboard**: Card-based layout showing MTD spend, daily averages, and trends
-- **Usage Analytics**: Interactive time-series charts with 7/30/90-day views
-- **Spending Alerts**: Configurable thresholds with email notifications
+- **Smart Cost Calculation**: Local cost computation from token usage with support for input/output tokens and caching
+- **Unified Dashboard**: Card-based layout showing MTD spend, daily averages, and trends by model
+- **Usage Analytics**: Interactive time-series charts with 7/30/90-day views, per-model breakdown
+- **Email Alerts**: Configurable spending thresholds with SMTP email notifications (daily/monthly)
 - **PWA Support**: Install to home screen, works offline with cached data
 - **Dark/Light Mode**: Respects system preferences with manual toggle
-- **Secure**: AES-256 encryption for API keys, rate limiting, CORS protection
+- **Secure**: AES-256 encryption for API keys, rate limiting, CORS protection, Helmet security headers
+
+## Provider Support Status
+
+| Provider | Usage Tracking | Cost Calculation | Notes |
+|----------|----------------|------------------|-------|
+| **OpenAI** | ✅ Full | ✅ Automatic | Uses Organization Usage API |
+| **Anthropic** | ✅ Full | ✅ Automatic | Requires Admin API key |
+| **Gemini** | ⚠️ Limited | ✅ Manual | No usage API; track via Google Cloud Console |
+| **Perplexity** | ⚠️ Limited | ✅ Manual | No usage API; check dashboard at perplexity.ai/settings/api |
+
+**Note**: For Gemini and Perplexity, automated polling will validate keys but cannot fetch historical usage data. You'll need to manually enter usage or check their respective dashboards.
 
 ## Architecture
 
@@ -110,15 +124,48 @@ A lightweight, progressive web application (PWA) for tracking AI API costs acros
 
 1. Click **"Add API Key"** in the header
 2. Enter a descriptive label (e.g., "Production", "Development")
-3. Select provider (OpenAI or Anthropic)
+3. Select provider:
+   - **OpenAI (GPT-4, GPT-3.5)** - Requires standard API key
+   - **Anthropic (Claude)** - Requires Admin API key for usage tracking
+   - **Google (Gemini)** - Requires Gemini API key
+   - **Perplexity** - Requires Perplexity API key
 4. Paste your API key (it will be validated and encrypted)
 5. Optionally add a workspace name
 
+**Important**: For Anthropic, use an [Admin API key](https://docs.claude.com/en/api/admin-api) to enable automated usage tracking. Regular API keys will validate but won't fetch usage data.
+
 ### Viewing Usage
 
-- **Dashboard Cards**: Each card shows MTD spend, daily average, and trend
+- **Dashboard Cards**: Each card shows MTD spend, daily average, and trend by model
 - **Time-Series Charts**: Click the expand arrow on any card to view detailed usage over time
 - **Time Ranges**: Switch between 7, 30, or 90-day views
+- **Model Breakdown**: View cost breakdown by specific model (GPT-4, Claude Sonnet, etc.)
+- **Token Details**: See input tokens, output tokens, and cached tokens separately
+
+### How Cost Calculation Works
+
+The app uses a **token-based cost tracking approach**:
+
+1. **Fetch Usage Data**: Automated polling retrieves token usage from provider APIs
+   - OpenAI: Organization Usage API (input/output/cached tokens)
+   - Anthropic: Admin API (uncached/cached input, output, cache creation tokens)
+   - Gemini & Perplexity: Key validation only (manual tracking required)
+
+2. **Local Cost Calculation**: Costs are computed using built-in pricing data
+   - Input tokens × Input price per million
+   - Output tokens × Output price per million
+   - Pricing database updated for November 2025 rates
+
+3. **Storage**: Token counts and calculated costs stored in MySQL
+   - Separate tracking of input/output/cached tokens
+   - Per-model breakdown
+   - Daily snapshots for historical analysis
+
+**Benefits**:
+- ✅ Works even if providers don't offer billing APIs
+- ✅ Transparent pricing (see `backend/src/config/pricing.ts`)
+- ✅ Accurate per-model cost attribution
+- ✅ Support for caching discounts (Anthropic prompt caching)
 
 ### Setting Up Alerts
 
@@ -165,19 +212,39 @@ Click the theme icon in the header to cycle between:
 ### Backend Environment Variables
 
 ```env
+# Server
 PORT=3001
 NODE_ENV=development
+
+# Database
 DB_HOST=localhost
 DB_PORT=3306
 DB_USER=api_cost_tracker
 DB_PASSWORD=your_password
 DB_NAME=api_cost_tracker
-ENCRYPTION_KEY=your_32_char_key
-POLL_INTERVAL_MINUTES=5
+
+# Security
+ENCRYPTION_KEY=your_32_char_key  # Generate with: openssl rand -hex 16
 ALLOWED_ORIGINS=http://localhost:3000
 RATE_LIMIT_WINDOW_MS=900000
 RATE_LIMIT_MAX_REQUESTS=100
+
+# Polling
+POLL_INTERVAL_MINUTES=5
+
+# Email Notifications (Optional - leave blank to disable)
+SMTP_HOST=smtp.gmail.com         # Your SMTP server
+SMTP_PORT=587                     # SMTP port (587 for TLS, 465 for SSL)
+SMTP_SECURE=false                 # true for port 465, false for other ports
+SMTP_USER=your-email@gmail.com    # SMTP username
+SMTP_PASS=your-app-password       # SMTP password (use app-specific password for Gmail)
+SMTP_FROM=API Cost Tracker <your-email@gmail.com>  # From address
 ```
+
+**Email Setup Notes:**
+- For Gmail: Use an [app-specific password](https://support.google.com/accounts/answer/185833)
+- For SendGrid: Use your SendGrid API key as the password
+- For custom SMTP: Contact your email provider for settings
 
 ### Frontend Environment Variables
 
@@ -305,13 +372,23 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 ## Roadmap
 
-- [ ] Email notification support for alerts
+### Completed (v1.1 - November 2025)
+- [x] Support for 4 AI providers (OpenAI, Anthropic, Gemini, Perplexity)
+- [x] Token-based cost tracking with local calculation
+- [x] Email notification support for spending alerts
+- [x] Detailed token breakdown (input/output/cached tokens)
+- [x] Per-model cost calculation
+
+### Planned Features
 - [ ] CSV/JSON export of usage data
 - [ ] Team/organization support with user roles
 - [ ] Budget forecasting and recommendations
-- [ ] Integration with more AI providers (Cohere, Hugging Face)
+- [ ] Full usage tracking for Gemini and Perplexity (pending API availability)
+- [ ] Integration with more AI providers (Cohere, Hugging Face, Mistral)
 - [ ] Mobile native apps (React Native)
 - [ ] Webhook support for external integrations
+- [ ] Advanced analytics and spending insights
+- [ ] Custom pricing tiers and volume discounts
 
 ## Support
 
