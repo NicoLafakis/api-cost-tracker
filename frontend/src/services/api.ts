@@ -31,7 +31,7 @@ api.interceptors.response.use(
 export interface ApiKey {
   id: number;
   label: string;
-  provider: 'openai' | 'anthropic';
+  provider: 'openai' | 'anthropic' | 'gemini' | 'perplexity';
   workspace: string | null;
   is_active: boolean;
   created_at: string;
