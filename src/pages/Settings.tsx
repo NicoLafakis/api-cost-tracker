@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useHouseholdContext } from '../context/HouseholdContext';
 import { Roommate, PaymentMethod } from '../types';
 
@@ -149,6 +150,43 @@ export function Settings() {
               </div>
             </div>
           ))}
+        </div>
+      </section>
+
+      {/* Tools */}
+      <section className="card">
+        <h2 className="font-semibold mb-3">Tools</h2>
+        <div className="space-y-2">
+          <Link
+            to="/agreement"
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">📝</span>
+              <div>
+                <p className="font-medium">Roommate Agreement</p>
+                <p className="text-xs text-gray-500">Create house rules & export PDF</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+          <Link
+            to="/share"
+            className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xl">🔗</span>
+              <div>
+                <p className="font-medium">Share Household</p>
+                <p className="text-xs text-gray-500">QR code & shareable link</p>
+              </div>
+            </div>
+            <svg className="w-5 h-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
         </div>
       </section>
 

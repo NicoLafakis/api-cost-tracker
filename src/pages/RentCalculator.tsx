@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useHouseholdContext } from '../context/HouseholdContext';
 import { calculateRentSplit, formatCurrency } from '../utils/calculations';
 import { CalculationMethod, Room } from '../types';
+import { GuestCalculator } from '../components/GuestCalculator';
 
 export function RentCalculator() {
   const { household, addRoom, updateRoom, removeRoom } = useHouseholdContext();
@@ -9,6 +10,7 @@ export function RentCalculator() {
   const [coupleMultiplier, setCoupleMultiplier] = useState(1.5);
   const [showAddRoom, setShowAddRoom] = useState(false);
   const [editingRoom, setEditingRoom] = useState<Room | null>(null);
+  const [showGuestCalculator, setShowGuestCalculator] = useState(false);
 
   if (!household) return null;
 
@@ -71,6 +73,17 @@ export function RentCalculator() {
           <p className="text-xs text-gray-500 mt-1">
             Couples share a room but use more common areas
           </p>
+        </div>
+
+        {/* Guest Calculator Button */}
+        <div className="mt-4 pt-4 border-t">
+          <button
+            onClick={() => setShowGuestCalculator(true)}
+            className="w-full py-2 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-lg transition-colors flex items-center justify-center gap-2"
+          >
+            <span>🏠</span>
+            Guest Cost Calculator
+          </button>
         </div>
       </section>
 
@@ -216,6 +229,14 @@ export function RentCalculator() {
             setShowAddRoom(false);
             setEditingRoom(null);
           }}
+        />
+      )}
+
+      {showGuestCalculator && (
+        <GuestCalculator
+          monthlyUtilities={200}
+          totalRoommates={household.roommates.length}
+          onClose={() => setShowGuestCalculator(false)}
         />
       )}
     </div>
