@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import { HouseholdProvider } from './context/HouseholdContext';
+import { ToastProvider } from './components/Toast';
 import { Layout } from './components/Layout';
 import { Dashboard } from './pages/Dashboard';
 import { RentCalculator } from './pages/RentCalculator';
@@ -52,7 +53,9 @@ function AppContent() {
 function App() {
   return (
     <HouseholdProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </HouseholdProvider>
   );
 }
