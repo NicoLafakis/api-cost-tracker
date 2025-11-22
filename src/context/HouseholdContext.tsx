@@ -1,12 +1,26 @@
-import { createContext, useContext, ReactNode } from 'react';
-import { useHousehold } from '../hooks/useHousehold';
+import { createContext, useContext, ReactNode, useEffect } from 'react';
+import { useHouseholdApi } from '../hooks/useHouseholdApi';
+import { useAuth } from './AuthContext';
 
-type HouseholdContextType = ReturnType<typeof useHousehold>;
+type HouseholdContextType = ReturnType<typeof useHouseholdApi>;
 
 const HouseholdContext = createContext<HouseholdContextType | null>(null);
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
-  const householdState = useHousehold();
+  const householdState = useHouseholdApi();
+  const { isAuthenticated } = useAuth();
+
+  // Load households when authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      householdState.loadHouseholds().then(households => {
+        // Auto-load first household if available
+        if (households.length > 0 && !householdState.household) {
+          householdState.loadHousehold(households[0].id);
+        }
+      });
+    }
+  }, [isAuthenticated]);
 
   return (
     <HouseholdContext.Provider value={householdState}>

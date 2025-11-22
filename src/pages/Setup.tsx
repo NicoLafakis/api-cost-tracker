@@ -2,11 +2,15 @@ import { useState } from 'react';
 import { useHouseholdContext } from '../context/HouseholdContext';
 
 export function Setup() {
-  const { createHousehold, addRoommate } = useHouseholdContext();
+  const { createHousehold, addRoommate, joinHousehold } = useHouseholdContext();
   const [step, setStep] = useState(1);
+  const [mode, setMode] = useState<'create' | 'join'>('create');
   const [householdName, setHouseholdName] = useState('');
   const [totalRent, setTotalRent] = useState('');
   const [roommates, setRoommates] = useState<string[]>(['']);
+  const [inviteCode, setInviteCode] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleAddRoommate = () => {
     setRoommates([...roommates, '']);
@@ -24,16 +28,37 @@ export function Setup() {
     }
   };
 
-  const handleSubmit = () => {
+  const handleJoinHousehold = async () => {
+    if (!inviteCode.trim()) return;
+    setIsLoading(true);
+    setError('');
+    try {
+      await joinHousehold(inviteCode.trim());
+    } catch (err: any) {
+      setError(err.message || 'Failed to join household');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmit = async () => {
     if (step === 1 && householdName && totalRent) {
       setStep(2);
     } else if (step === 2) {
       const validRoommates = roommates.filter(name => name.trim());
       if (validRoommates.length > 0) {
-        createHousehold(householdName, parseFloat(totalRent));
-        validRoommates.forEach(name => {
-          addRoommate(name.trim());
-        });
+        setIsLoading(true);
+        setError('');
+        try {
+          await createHousehold(householdName, parseFloat(totalRent));
+          for (const name of validRoommates) {
+            await addRoommate(name.trim());
+          }
+        } catch (err: any) {
+          setError(err.message || 'Failed to create household');
+        } finally {
+          setIsLoading(false);
+        }
       }
     }
   };
@@ -47,7 +72,43 @@ export function Setup() {
         </div>
 
         <div className="card">
-          {step === 1 ? (
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          {mode === 'join' ? (
+            <>
+              <h2 className="text-xl font-semibold mb-4">Join a Household</h2>
+              <div className="space-y-4">
+                <div>
+                  <label className="label">Invite Code</label>
+                  <input
+                    type="text"
+                    className="input text-center uppercase tracking-widest"
+                    placeholder="XXXXXXXX"
+                    value={inviteCode}
+                    onChange={e => setInviteCode(e.target.value.toUpperCase())}
+                    maxLength={8}
+                  />
+                </div>
+                <button
+                  onClick={handleJoinHousehold}
+                  disabled={!inviteCode.trim() || isLoading}
+                  className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isLoading ? 'Joining...' : 'Join Household'}
+                </button>
+                <button
+                  onClick={() => setMode('create')}
+                  className="text-primary-600 text-sm font-medium w-full text-center"
+                >
+                  Or create a new household
+                </button>
+              </div>
+            </>
+          ) : step === 1 ? (
             <>
               <h2 className="text-xl font-semibold mb-4">Create Your Household</h2>
               <div className="space-y-4">
@@ -80,6 +141,12 @@ export function Setup() {
                   className="btn-primary w-full disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Next
+                </button>
+                <button
+                  onClick={() => setMode('join')}
+                  className="text-primary-600 text-sm font-medium w-full text-center"
+                >
+                  Or join an existing household
                 </button>
               </div>
             </>
@@ -119,15 +186,15 @@ export function Setup() {
                 Add Another Roommate
               </button>
               <div className="flex gap-2">
-                <button onClick={() => setStep(1)} className="btn-secondary flex-1">
+                <button onClick={() => setStep(1)} className="btn-secondary flex-1" disabled={isLoading}>
                   Back
                 </button>
                 <button
                   onClick={handleSubmit}
-                  disabled={!roommates.some(name => name.trim())}
+                  disabled={!roommates.some(name => name.trim()) || isLoading}
                   className="btn-primary flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Create Household
+                  {isLoading ? 'Creating...' : 'Create Household'}
                 </button>
               </div>
             </>
